@@ -1,0 +1,4 @@
+[
+    {"alias": "b", "command": ["go", "build", "-o", "t"], "path": "PWD"},
+    {"alias": "e", "command": ["echo", "\"foo\""]}
+]

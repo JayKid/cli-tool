@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -10,24 +12,29 @@ import (
 
 func prettyPrintAlias(alias Alias) {
 	fmt.Println("trigger:")
-	fmt.Printf("./tool %s\n", alias.alias)
+	fmt.Printf("./tool %s\n", alias.Alias)
 	fmt.Println("")
 	fmt.Println("command:")
-	fmt.Println(alias.command)
+	fmt.Println(alias.Command)
 	fmt.Println("")
-	if len(alias.path) > 0 {
+	if len(alias.Path) > 0 {
 		fmt.Println("executed in this path:")
-		fmt.Println(alias.path)
+		fmt.Println(alias.Path)
 		fmt.Println("")
 	}
 }
 
 func main() {
-	// This would be read from a JSON
-	aliases := []Alias{
-		{alias: "b", command: []string{"go", "build", "-o", "main"}, path: os.Getenv("PWD")},
-		{alias: "e", command: []string{"echo", "\"foo\""}},
+	rawJSON, err := ioutil.ReadFile("./config/aliases.json")
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
+
+	aliasesBody := []byte(rawJSON)
+	aliases := make([]Alias, 0)
+	json.Unmarshal(aliasesBody, &aliases)
+
 	list := flag.Bool("l", false, "List the aliases available")
 	alias := flag.String("r", "", "Run alias")
 	flag.Parse()
@@ -39,11 +46,16 @@ func main() {
 		}
 	} else if len(*alias) > 0 {
 		for _, aliasFromConfiguration := range aliases {
-			if aliasFromConfiguration.alias == *alias {
-				command := exec.Command(aliasFromConfiguration.command[0], aliasFromConfiguration.command[1:]...)
+			if aliasFromConfiguration.Alias == *alias {
+				command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
 
-				if len(aliasFromConfiguration.path) > 0 {
-					command.Dir = aliasFromConfiguration.path
+				if len(aliasFromConfiguration.Path) > 0 {
+					if aliasFromConfiguration.Path == "PWD" {
+						command.Dir = os.Getenv("PWD")
+					} else {
+						command.Dir = aliasFromConfiguration.Path
+
+					}
 				}
 
 				output, err := command.CombinedOutput()
