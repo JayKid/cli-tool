@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 func prettyPrintAlias(alias Alias) {
@@ -25,7 +26,26 @@ func prettyPrintAlias(alias Alias) {
 }
 
 func main() {
-	rawJSON, err := ioutil.ReadFile("./config/aliases.json")
+
+	userConfigurationPath := flag.String("c", "", "Supply configuration path")
+	list := flag.Bool("l", false, "List the aliases available")
+	alias := flag.String("r", "", "Run alias")
+	flag.Parse()
+
+	toolExecutable, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	toolPath := filepath.Dir(toolExecutable)
+
+	configurationPath := toolPath + "/config/aliases.json"
+	fmt.Println(configurationPath)
+
+	if len(*userConfigurationPath) > 0 {
+		configurationPath = *userConfigurationPath
+	}
+
+	rawJSON, err := ioutil.ReadFile(configurationPath)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -34,10 +54,6 @@ func main() {
 	aliasesBody := []byte(rawJSON)
 	aliases := make([]Alias, 0)
 	json.Unmarshal(aliasesBody, &aliases)
-
-	list := flag.Bool("l", false, "List the aliases available")
-	alias := flag.String("r", "", "Run alias")
-	flag.Parse()
 
 	if *list {
 		fmt.Printf("Aliases:\n\n")
