@@ -11,20 +11,6 @@ import (
 	"path/filepath"
 )
 
-func prettyPrintAlias(alias Alias) {
-	fmt.Println("trigger:")
-	fmt.Printf("./tool %s\n", alias.Alias)
-	fmt.Println("")
-	fmt.Println("command:")
-	fmt.Println(alias.Command)
-	fmt.Println("")
-	if len(alias.Path) > 0 {
-		fmt.Println("executed in this path:")
-		fmt.Println(alias.Path)
-		fmt.Println("")
-	}
-}
-
 func getArguments() (userConfigurationPath *string, showList *bool, alias *string) {
 	userConfigurationPath = flag.String("c", "", "Supply configuration path")
 	showList = flag.Bool("l", false, "List the aliases available")
