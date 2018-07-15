@@ -48,6 +48,37 @@ func parseAliasesFromConfiguration(configurationPath string) (aliases []Alias) {
 	return
 }
 
+func printAliases(aliases []Alias) {
+	fmt.Printf("Aliases:\n\n")
+	for _, alias := range aliases {
+		alias.PrettyPrint()
+	}
+}
+
+func runAlias(aliases []Alias, userSuppliedAlias *string) {
+	for _, aliasFromConfiguration := range aliases {
+		if aliasFromConfiguration.Alias == *userSuppliedAlias {
+			command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
+
+			if len(aliasFromConfiguration.Path) > 0 {
+				if aliasFromConfiguration.Path == "PWD" {
+					command.Dir = os.Getenv("PWD")
+				} else {
+					command.Dir = aliasFromConfiguration.Path
+
+				}
+			}
+
+			output, err := command.CombinedOutput()
+			log.Printf("Running command and waiting for it to finish...")
+			if err != nil {
+				os.Stderr.WriteString(err.Error())
+			}
+			fmt.Println(string(output))
+		}
+	}
+}
+
 func main() {
 
 	userConfigurationPath, showList, userSuppliedAlias := getArguments()
@@ -55,32 +86,9 @@ func main() {
 	aliases := parseAliasesFromConfiguration(configurationPath)
 
 	if *showList {
-		fmt.Printf("Aliases:\n\n")
-		for _, alias := range aliases {
-			alias.PrettyPrint()
-		}
+		printAliases(aliases)
 	} else if len(*userSuppliedAlias) > 0 {
-		for _, aliasFromConfiguration := range aliases {
-			if aliasFromConfiguration.Alias == *userSuppliedAlias {
-				command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
-
-				if len(aliasFromConfiguration.Path) > 0 {
-					if aliasFromConfiguration.Path == "PWD" {
-						command.Dir = os.Getenv("PWD")
-					} else {
-						command.Dir = aliasFromConfiguration.Path
-
-					}
-				}
-
-				output, err := command.CombinedOutput()
-				log.Printf("Running command and waiting for it to finish...")
-				if err != nil {
-					os.Stderr.WriteString(err.Error())
-				}
-				fmt.Println(string(output))
-			}
-		}
+		runAlias(aliases, userSuppliedAlias)
 	} else {
 		flag.PrintDefaults()
 	}
