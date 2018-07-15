@@ -11,40 +11,30 @@ import (
 	"path/filepath"
 )
 
-func prettyPrintAlias(alias Alias) {
-	fmt.Println("trigger:")
-	fmt.Printf("./tool %s\n", alias.Alias)
-	fmt.Println("")
-	fmt.Println("command:")
-	fmt.Println(alias.Command)
-	fmt.Println("")
-	if len(alias.Path) > 0 {
-		fmt.Println("executed in this path:")
-		fmt.Println(alias.Path)
-		fmt.Println("")
-	}
+func getArguments() (userConfigurationPath *string, showList *bool, userSuppliedAlias *string) {
+	userConfigurationPath = flag.String("c", "", "Supply configuration path")
+	showList = flag.Bool("l", false, "List the aliases available")
+	userSuppliedAlias = flag.String("r", "", "Run alias")
+	flag.Parse()
+	return
 }
 
-func main() {
-
-	userConfigurationPath := flag.String("c", "", "Supply configuration path")
-	list := flag.Bool("l", false, "List the aliases available")
-	alias := flag.String("r", "", "Run alias")
-	flag.Parse()
-
+func determineConfigurationPath(userConfigurationPath *string) (configurationPath string) {
 	toolExecutable, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
 	toolPath := filepath.Dir(toolExecutable)
 
-	configurationPath := toolPath + "/config/aliases.json"
-	fmt.Println(configurationPath)
+	configurationPath = toolPath + "/config/aliases.json"
 
 	if len(*userConfigurationPath) > 0 {
 		configurationPath = *userConfigurationPath
 	}
+	return
+}
 
+func parseAliasesFromConfiguration(configurationPath string) (aliases []Alias) {
 	rawJSON, err := ioutil.ReadFile(configurationPath)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -52,36 +42,52 @@ func main() {
 	}
 
 	aliasesBody := []byte(rawJSON)
-	aliases := make([]Alias, 0)
+	aliases = make([]Alias, 0)
 	json.Unmarshal(aliasesBody, &aliases)
+	return
+}
 
-	if *list {
-		fmt.Printf("Aliases:\n\n")
-		for _, alias := range aliases {
-			prettyPrintAlias(alias)
-		}
-	} else if len(*alias) > 0 {
-		for _, aliasFromConfiguration := range aliases {
-			if aliasFromConfiguration.Alias == *alias {
-				command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
+func printAliases(aliases []Alias) {
+	fmt.Printf("Aliases:\n\n")
+	for _, alias := range aliases {
+		alias.PrettyPrint()
+	}
+}
 
-				if len(aliasFromConfiguration.Path) > 0 {
-					if aliasFromConfiguration.Path == "PWD" {
-						command.Dir = os.Getenv("PWD")
-					} else {
-						command.Dir = aliasFromConfiguration.Path
+func runAlias(aliases []Alias, userSuppliedAlias *string) {
+	for _, aliasFromConfiguration := range aliases {
+		if aliasFromConfiguration.Alias == *userSuppliedAlias {
+			command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
 
-					}
+			if len(aliasFromConfiguration.Path) > 0 {
+				if aliasFromConfiguration.Path == "PWD" {
+					command.Dir = os.Getenv("PWD")
+				} else {
+					command.Dir = aliasFromConfiguration.Path
+
 				}
-
-				output, err := command.CombinedOutput()
-				log.Printf("Running command and waiting for it to finish...")
-				if err != nil {
-					os.Stderr.WriteString(err.Error())
-				}
-				fmt.Println(string(output))
 			}
+
+			output, err := command.CombinedOutput()
+			log.Printf("Running command and waiting for it to finish...")
+			if err != nil {
+				os.Stderr.WriteString(err.Error())
+			}
+			fmt.Println(string(output))
 		}
+	}
+}
+
+func main() {
+
+	userConfigurationPath, showList, userSuppliedAlias := getArguments()
+	configurationPath := determineConfigurationPath(userConfigurationPath)
+	aliases := parseAliasesFromConfiguration(configurationPath)
+
+	if *showList {
+		printAliases(aliases)
+	} else if len(*userSuppliedAlias) > 0 {
+		runAlias(aliases, userSuppliedAlias)
 	} else {
 		flag.PrintDefaults()
 	}

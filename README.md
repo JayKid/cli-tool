@@ -21,3 +21,7 @@ See [`/config/aliases.json`](https://github.com/JayKid/cli-tool/blob/master/conf
 ## List aliases
 
 `./t -l`
+
+## Suply configuration path
+
+`./t -c {path_to_config} -r {your_alias}`
