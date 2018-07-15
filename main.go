@@ -25,26 +25,31 @@ func prettyPrintAlias(alias Alias) {
 	}
 }
 
-func main() {
-
-	userConfigurationPath := flag.String("c", "", "Supply configuration path")
-	list := flag.Bool("l", false, "List the aliases available")
-	alias := flag.String("r", "", "Run alias")
+func getArguments() (userConfigurationPath *string, showList *bool, alias *string) {
+	userConfigurationPath = flag.String("c", "", "Supply configuration path")
+	showList = flag.Bool("l", false, "List the aliases available")
+	alias = flag.String("r", "", "Run alias")
 	flag.Parse()
+	return
+}
 
+func determineConfigurationPath(userConfigurationPath *string) (configurationPath string) {
 	toolExecutable, err := os.Executable()
 	if err != nil {
 		panic(err)
 	}
 	toolPath := filepath.Dir(toolExecutable)
 
-	configurationPath := toolPath + "/config/aliases.json"
+	configurationPath = toolPath + "/config/aliases.json"
 	fmt.Println(configurationPath)
 
 	if len(*userConfigurationPath) > 0 {
 		configurationPath = *userConfigurationPath
 	}
+	return
+}
 
+func parseAliasesFromConfiguration(configurationPath string) (aliases []Alias) {
 	rawJSON, err := ioutil.ReadFile(configurationPath)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -52,10 +57,18 @@ func main() {
 	}
 
 	aliasesBody := []byte(rawJSON)
-	aliases := make([]Alias, 0)
+	aliases = make([]Alias, 0)
 	json.Unmarshal(aliasesBody, &aliases)
+	return
+}
 
-	if *list {
+func main() {
+
+	userConfigurationPath, showList, alias := getArguments()
+	configurationPath := determineConfigurationPath(userConfigurationPath)
+	aliases := parseAliasesFromConfiguration(configurationPath)
+
+	if *showList {
 		fmt.Printf("Aliases:\n\n")
 		for _, alias := range aliases {
 			prettyPrintAlias(alias)
