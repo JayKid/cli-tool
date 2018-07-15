@@ -27,7 +27,6 @@ func determineConfigurationPath(userConfigurationPath *string) (configurationPat
 	toolPath := filepath.Dir(toolExecutable)
 
 	configurationPath = toolPath + "/config/aliases.json"
-	fmt.Println(configurationPath)
 
 	if len(*userConfigurationPath) > 0 {
 		configurationPath = *userConfigurationPath
