@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 )
 
-func getArguments() (userConfigurationPath *string, showList *bool, alias *string) {
+func getArguments() (userConfigurationPath *string, showList *bool, userSuppliedAlias *string) {
 	userConfigurationPath = flag.String("c", "", "Supply configuration path")
 	showList = flag.Bool("l", false, "List the aliases available")
-	alias = flag.String("r", "", "Run alias")
+	userSuppliedAlias = flag.String("r", "", "Run alias")
 	flag.Parse()
 	return
 }
@@ -50,7 +50,7 @@ func parseAliasesFromConfiguration(configurationPath string) (aliases []Alias) {
 
 func main() {
 
-	userConfigurationPath, showList, alias := getArguments()
+	userConfigurationPath, showList, userSuppliedAlias := getArguments()
 	configurationPath := determineConfigurationPath(userConfigurationPath)
 	aliases := parseAliasesFromConfiguration(configurationPath)
 
@@ -59,9 +59,9 @@ func main() {
 		for _, alias := range aliases {
 			alias.PrettyPrint()
 		}
-	} else if len(*alias) > 0 {
+	} else if len(*userSuppliedAlias) > 0 {
 		for _, aliasFromConfiguration := range aliases {
-			if aliasFromConfiguration.Alias == *alias {
+			if aliasFromConfiguration.Alias == *userSuppliedAlias {
 				command := exec.Command(aliasFromConfiguration.Command[0], aliasFromConfiguration.Command[1:]...)
 
 				if len(aliasFromConfiguration.Path) > 0 {
