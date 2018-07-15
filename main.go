@@ -71,7 +71,7 @@ func main() {
 	if *showList {
 		fmt.Printf("Aliases:\n\n")
 		for _, alias := range aliases {
-			prettyPrintAlias(alias)
+			alias.PrettyPrint()
 		}
 	} else if len(*alias) > 0 {
 		for _, aliasFromConfiguration := range aliases {
